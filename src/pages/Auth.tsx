@@ -64,7 +64,7 @@ const Auth = () => {
             <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center mb-8 backdrop-blur-md border border-white/10 shadow-xl transition-transform hover:scale-105 duration-500">
               <span className="text-5xl">💰</span>
             </div>
-            <h2 className="text-3xl font-bold mb-4 tracking-tight text-center">CashCtrl</h2>
+            <h2 className="text-3xl font-bold mb-4 tracking-tight text-center">Expense 360</h2>
             <p className="text-center text-zinc-400 max-w-[280px] leading-relaxed text-sm">
               Take control of your finances. Track expenses, analyze spending, and manage your wealth elegantly.
             </p>
