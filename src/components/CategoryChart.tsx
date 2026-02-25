@@ -1,12 +1,14 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Expense, CATEGORIES, CATEGORY_COLORS, CATEGORY_BG } from "@/lib/expense-data";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface CategoryChartProps {
   expenses: Expense[];
 }
 
 const CategoryChart = ({ expenses }: CategoryChartProps) => {
+  const { formatAmount } = useCurrency();
   const data = CATEGORIES.map((cat) => ({
     name: cat,
     value: expenses.filter((e) => e.category === cat).reduce((sum, e) => sum + e.amount, 0),
@@ -29,7 +31,7 @@ const CategoryChart = ({ expenses }: CategoryChartProps) => {
                     <Cell key={entry.name} fill={CATEGORY_COLORS[entry.name as keyof typeof CATEGORY_COLORS]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
+                <Tooltip formatter={(value: number) => formatAmount(value)} />
               </PieChart>
             </ResponsiveContainer>
           </div>
