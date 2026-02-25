@@ -14,7 +14,6 @@ export interface Expense {
   amount: number;
   category: ExpenseCategory;
   date: string;
-  paidBy: string;
   status: "approved" | "pending" | "rejected";
 }
 
@@ -52,16 +51,16 @@ export const CATEGORY_BG: Record<ExpenseCategory, string> = {
 };
 
 export const MOCK_EXPENSES: Expense[] = [
-  { id: "1", description: "Developer salaries - Feb", amount: 45000, category: "Salaries", date: "2026-02-01", paidBy: "HR Department", status: "approved" },
-  { id: "2", description: "AWS hosting & services", amount: 2800, category: "Software", date: "2026-02-03", paidBy: "DevOps Team", status: "approved" },
-  { id: "3", description: "Figma Enterprise license", amount: 450, category: "Software", date: "2026-02-05", paidBy: "Design Team", status: "approved" },
-  { id: "4", description: "MacBook Pro M4 x2", amount: 6400, category: "Hardware", date: "2026-02-07", paidBy: "IT Department", status: "pending" },
-  { id: "5", description: "Office rent - Feb", amount: 5500, category: "Office", date: "2026-02-01", paidBy: "Admin", status: "approved" },
-  { id: "6", description: "Google Ads campaign", amount: 3200, category: "Marketing", date: "2026-02-10", paidBy: "Marketing Team", status: "approved" },
-  { id: "7", description: "Team offsite - Islamabad", amount: 1800, category: "Travel", date: "2026-02-12", paidBy: "HR Department", status: "pending" },
-  { id: "8", description: "Internet & phone bills", amount: 350, category: "Utilities", date: "2026-02-01", paidBy: "Admin", status: "approved" },
-  { id: "9", description: "Standing desks x4", amount: 2200, category: "Office", date: "2026-02-15", paidBy: "Admin", status: "rejected" },
-  { id: "10", description: "GitHub Enterprise", amount: 1200, category: "Software", date: "2026-02-08", paidBy: "DevOps Team", status: "approved" },
-  { id: "11", description: "LinkedIn job postings", amount: 800, category: "Marketing", date: "2026-02-18", paidBy: "HR Department", status: "pending" },
-  { id: "12", description: "Electricity bill", amount: 600, category: "Utilities", date: "2026-02-20", paidBy: "Admin", status: "approved" },
+  { id: "1", description: "Developer salaries - Feb", amount: 45000, category: "Salaries", date: "2026-02-01", status: "approved" },
+  { id: "2", description: "AWS hosting & services", amount: 2800, category: "Software", date: "2026-02-03", status: "approved" },
+  { id: "3", description: "Figma Enterprise license", amount: 450, category: "Software", date: "2026-02-05", status: "approved" },
+  { id: "4", description: "MacBook Pro M4 x2", amount: 6400, category: "Hardware", date: "2026-02-07", status: "pending" },
+  { id: "5", description: "Office rent - Feb", amount: 5500, category: "Office", date: "2026-02-01", status: "approved" },
+  { id: "6", description: "Google Ads campaign", amount: 3200, category: "Marketing", date: "2026-02-10", status: "approved" },
+  { id: "7", description: "Team offsite - Islamabad", amount: 1800, category: "Travel", date: "2026-02-12", status: "pending" },
+  { id: "8", description: "Internet & phone bills", amount: 350, category: "Utilities", date: "2026-02-01", status: "approved" },
+  { id: "9", description: "Standing desks x4", amount: 2200, category: "Office", date: "2026-02-15", status: "rejected" },
+  { id: "10", description: "GitHub Enterprise", amount: 1200, category: "Software", date: "2026-02-08", status: "approved" },
+  { id: "11", description: "LinkedIn job postings", amount: 800, category: "Marketing", date: "2026-02-18", status: "pending" },
+  { id: "12", description: "Electricity bill", amount: 600, category: "Utilities", date: "2026-02-20", status: "approved" },
 ];
