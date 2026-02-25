@@ -1,40 +1,55 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CATEGORIES, ExpenseCategory, Expense } from "@/lib/expense-data";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface AddExpenseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd: (expense: Omit<Expense, "id">) => void;
+  onSave: (expense: Omit<Expense, "id">, editId?: string) => void;
+  expenseToEdit?: Expense | null;
 }
 
-const AddExpenseDialog = ({ open, onOpenChange, onAdd }: AddExpenseDialogProps) => {
+const AddExpenseDialog = ({ open, onOpenChange, onSave, expenseToEdit }: AddExpenseDialogProps) => {
+  const { currency } = useCurrency();
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<ExpenseCategory | "">("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const [paidBy, setPaidBy] = useState("");
   const [status, setStatus] = useState<Expense["status"]>("pending");
 
+  // Populate data when dialog opens for editing
+  useEffect(() => {
+    if (open && expenseToEdit) {
+      setDescription(expenseToEdit.description);
+      setAmount(expenseToEdit.amount.toString());
+      setCategory(expenseToEdit.category);
+      setDate(expenseToEdit.date);
+      setStatus(expenseToEdit.status);
+    } else if (open && !expenseToEdit) {
+      // Reset when opening for new item
+      setDescription("");
+      setAmount("");
+      setCategory("");
+      setDate(new Date().toISOString().split("T")[0]);
+      setStatus("pending");
+    }
+  }, [open, expenseToEdit]);
+
   const handleSubmit = () => {
-    if (!description || !amount || !category || !date || !paidBy) return;
-    onAdd({
+    if (!description || !amount || !category || !date) return;
+    onSave({
       description,
       amount: parseFloat(amount),
       category: category as ExpenseCategory,
       date,
-      paidBy,
       status,
-    });
-    setDescription("");
-    setAmount("");
-    setCategory("");
-    setPaidBy("");
-    setStatus("pending");
+    }, expenseToEdit?.id);
+
     onOpenChange(false);
   };
 
@@ -42,7 +57,7 @@ const AddExpenseDialog = ({ open, onOpenChange, onAdd }: AddExpenseDialogProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New Expense</DialogTitle>
+          <DialogTitle>{expenseToEdit ? "Edit Expense" : "Add New Expense"}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
@@ -51,7 +66,7 @@ const AddExpenseDialog = ({ open, onOpenChange, onAdd }: AddExpenseDialogProps) 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount ($)</Label>
+              <Label htmlFor="amount">Amount ({currency})</Label>
               <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
             <div className="grid gap-2">
@@ -83,14 +98,10 @@ const AddExpenseDialog = ({ open, onOpenChange, onAdd }: AddExpenseDialogProps) 
               </Select>
             </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="paidBy">Paid By</Label>
-            <Input id="paidBy" placeholder="e.g. DevOps Team" value={paidBy} onChange={(e) => setPaidBy(e.target.value)} />
-          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit}>Add Expense</Button>
+          <Button onClick={handleSubmit}>{expenseToEdit ? "Save Changes" : "Add Expense"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
