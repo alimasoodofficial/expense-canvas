@@ -12,14 +12,20 @@ import MonthlyChart from "@/components/MonthlyChart";
 import { CATEGORIES, Expense } from "@/lib/expense-data";
 import { useAuth } from "@/hooks/useAuth";
 import { useExpenses } from "@/hooks/useExpenses";
+import { useCurrency, Currency } from "@/hooks/useCurrency";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { isSameMonth, subMonths, parseISO } from "date-fns";
 
 const Index = () => {
   const { user, signOut } = useAuth();
-  const { expenses, isLoading, addExpense, deleteExpense } = useExpenses();
+  const navigate = useNavigate();
+  const { expenses, isLoading, addExpense, updateExpense, deleteExpense } = useExpenses();
+  const { currency, setCurrency, formatAmount } = useCurrency();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
 
   // Map DB expenses to the UI Expense type
   const mappedExpenses: Expense[] = expenses.map((e) => ({
@@ -28,35 +34,61 @@ const Index = () => {
     amount: Number(e.amount),
     category: e.category as Expense["category"],
     date: e.date,
-    paidBy: e.paid_by,
     status: e.status as Expense["status"],
   }));
+
+  const now = new Date();
+  const lastMonth = subMonths(now, 1);
+
+  const thisMonthExpenses = mappedExpenses.filter(e => isSameMonth(parseISO(e.date), now));
+  const lastMonthExpenses = mappedExpenses.filter(e => isSameMonth(parseISO(e.date), lastMonth));
+
+  const totalThisMonth = thisMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalLastMonth = lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+  const percentageChange = totalLastMonth === 0
+    ? (totalThisMonth > 0 ? 100 : 0)
+    : ((totalThisMonth - totalLastMonth) / totalLastMonth) * 100;
 
   const totalExpenses = mappedExpenses.reduce((sum, e) => sum + e.amount, 0);
   const approvedTotal = mappedExpenses.filter((e) => e.status === "approved").reduce((sum, e) => sum + e.amount, 0);
   const pendingCount = mappedExpenses.filter((e) => e.status === "pending").length;
 
   const filtered = mappedExpenses.filter((e) => {
-    const matchSearch = e.description.toLowerCase().includes(search.toLowerCase()) || e.paidBy.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = e.description.toLowerCase().includes(search.toLowerCase());
     const matchCategory = filterCategory === "all" || e.category === filterCategory;
     return matchSearch && matchCategory;
   });
 
-  const handleAdd = (expense: Omit<Expense, "id">) => {
-    addExpense.mutate(
-      {
-        description: expense.description,
-        amount: expense.amount,
-        category: expense.category,
-        date: expense.date,
-        paid_by: expense.paidBy,
-        status: expense.status,
-      },
-      {
-        onSuccess: () => toast.success("Expense added!"),
-        onError: (err) => toast.error(err.message),
-      }
-    );
+  const handleSaveExpense = (expenseData: Omit<Expense, "id">, editId?: string) => {
+    if (editId) {
+      updateExpense.mutate(
+        { id: editId, ...expenseData },
+        {
+          onSuccess: () => toast.success("Expense updated!"),
+          onError: (err) => toast.error(err.message),
+        }
+      );
+    } else {
+      addExpense.mutate(
+        {
+          description: expenseData.description,
+          amount: expenseData.amount,
+          category: expenseData.category,
+          date: expenseData.date,
+          status: expenseData.status,
+        },
+        {
+          onSuccess: () => toast.success("Expense added!"),
+          onError: (err) => toast.error(err.message),
+        }
+      );
+    }
+  };
+
+  const handleEditClick = (expense: Expense) => {
+    setExpenseToEdit(expense);
+    setDialogOpen(true);
   };
 
   const handleDelete = (id: string) => {
@@ -79,20 +111,31 @@ const Index = () => {
             <h1 className="text-2xl font-bold text-foreground tracking-tight">💰 ExpenseFlow</h1>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setDialogOpen(true)} className="gap-2">
+          <div className="flex gap-2 items-center">
+            <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+              <SelectTrigger className="w-[80px] h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PKR">PKR</SelectItem>
+                <SelectItem value="USD">USD</SelectItem>
+                <SelectItem value="EUR">EUR</SelectItem>
+                <SelectItem value="GBP">GBP</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={() => { setExpenseToEdit(null); setDialogOpen(true); }} className="gap-2">
               <Plus className="h-4 w-4" />
-              Add Expense
+              <span className="hidden sm:inline">Add Expense</span>
             </Button>
-            <Button variant="outline" onClick={handleSignOut} className="gap-2">
+            <Button variant="ghost" onClick={handleSignOut} className="gap-2">
               <LogOut className="h-4 w-4" />
-              Sign Out
+              <span className="hidden sm:inline">Sign Out</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-6 py-8 space-y-8">
+      <main className="container mx-auto px-4 sm:px-6 py-8 space-y-8">
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}
@@ -100,15 +143,26 @@ const Index = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <StatCard title="Total Expenses" value={`$${totalExpenses.toLocaleString()}`} icon={DollarSign} gradient="bg-primary" trend="+12% from last month" trendUp />
-              <StatCard title="Approved" value={`$${approvedTotal.toLocaleString()}`} icon={TrendingUp} gradient="bg-[hsl(160,84%,39%)]" />
+              <StatCard
+                title="Total Expenses"
+                value={formatAmount(totalExpenses)}
+                icon={DollarSign}
+                gradient="bg-primary"
+                trend={`${percentageChange >= 0 ? "+" : ""}${Math.round(percentageChange)}% from last month`}
+                trendUp={percentageChange >= 0}
+              />
+              <StatCard title="Approved" value={formatAmount(approvedTotal)} icon={TrendingUp} gradient="bg-[hsl(160,84%,39%)]" />
               <StatCard title="Pending Items" value={pendingCount.toString()} icon={Clock} gradient="bg-[hsl(38,92%,50%)]" />
               <StatCard title="Total Entries" value={mappedExpenses.length.toString()} icon={Receipt} gradient="bg-[hsl(var(--chart-3))]" />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CategoryChart expenses={mappedExpenses} />
-              <MonthlyChart />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full overflow-hidden">
+              <div className="w-full overflow-hidden">
+                <CategoryChart expenses={mappedExpenses} />
+              </div>
+              <div className="w-full overflow-hidden">
+                <MonthlyChart expenses={mappedExpenses} />
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -130,13 +184,22 @@ const Index = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <ExpenseTable expenses={filtered} onDelete={handleDelete} />
+              <div className="w-full overflow-x-auto pb-4">
+                <div className="min-w-[800px]">
+                  <ExpenseTable expenses={filtered} onDelete={handleDelete} onEdit={handleEditClick} />
+                </div>
+              </div>
             </div>
           </>
         )}
       </main>
 
-      <AddExpenseDialog open={dialogOpen} onOpenChange={setDialogOpen} onAdd={handleAdd} />
+      <AddExpenseDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSave={handleSaveExpense}
+        expenseToEdit={expenseToEdit}
+      />
     </div>
   );
 };
