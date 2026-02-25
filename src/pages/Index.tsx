@@ -1,37 +1,74 @@
 import { useState } from "react";
-import { Plus, DollarSign, TrendingUp, Receipt, Clock, Search, Filter } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, Receipt, Clock, Search, Filter, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import StatCard from "@/components/StatCard";
 import ExpenseTable from "@/components/ExpenseTable";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
 import CategoryChart from "@/components/CategoryChart";
 import MonthlyChart from "@/components/MonthlyChart";
-import { MOCK_EXPENSES, CATEGORIES, Expense } from "@/lib/expense-data";
+import { CATEGORIES, Expense } from "@/lib/expense-data";
+import { useAuth } from "@/hooks/useAuth";
+import { useExpenses } from "@/hooks/useExpenses";
+import { toast } from "sonner";
 
 const Index = () => {
-  const [expenses, setExpenses] = useState<Expense[]>(MOCK_EXPENSES);
+  const { user, signOut } = useAuth();
+  const { expenses, isLoading, addExpense, deleteExpense } = useExpenses();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
 
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const approvedTotal = expenses.filter((e) => e.status === "approved").reduce((sum, e) => sum + e.amount, 0);
-  const pendingCount = expenses.filter((e) => e.status === "pending").length;
+  // Map DB expenses to the UI Expense type
+  const mappedExpenses: Expense[] = expenses.map((e) => ({
+    id: e.id,
+    description: e.description,
+    amount: Number(e.amount),
+    category: e.category as Expense["category"],
+    date: e.date,
+    paidBy: e.paid_by,
+    status: e.status as Expense["status"],
+  }));
 
-  const filtered = expenses.filter((e) => {
+  const totalExpenses = mappedExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const approvedTotal = mappedExpenses.filter((e) => e.status === "approved").reduce((sum, e) => sum + e.amount, 0);
+  const pendingCount = mappedExpenses.filter((e) => e.status === "pending").length;
+
+  const filtered = mappedExpenses.filter((e) => {
     const matchSearch = e.description.toLowerCase().includes(search.toLowerCase()) || e.paidBy.toLowerCase().includes(search.toLowerCase());
     const matchCategory = filterCategory === "all" || e.category === filterCategory;
     return matchSearch && matchCategory;
   });
 
   const handleAdd = (expense: Omit<Expense, "id">) => {
-    setExpenses((prev) => [{ ...expense, id: Date.now().toString() }, ...prev]);
+    addExpense.mutate(
+      {
+        description: expense.description,
+        amount: expense.amount,
+        category: expense.category,
+        date: expense.date,
+        paid_by: expense.paidBy,
+        status: expense.status,
+      },
+      {
+        onSuccess: () => toast.success("Expense added!"),
+        onError: (err) => toast.error(err.message),
+      }
+    );
   };
 
   const handleDelete = (id: string) => {
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    deleteExpense.mutate(id, {
+      onSuccess: () => toast.success("Expense deleted!"),
+      onError: (err) => toast.error(err.message),
+    });
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out");
   };
 
   return (
@@ -40,49 +77,63 @@ const Index = () => {
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground tracking-tight">💰 ExpenseFlow</h1>
-            <p className="text-sm text-muted-foreground">Software House Expense Tracker</p>
+            <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
-          <Button onClick={() => setDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Expense
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Expense
+            </Button>
+            <Button variant="outline" onClick={handleSignOut} className="gap-2">
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="container mx-auto px-6 py-8 space-y-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total Expenses" value={`$${totalExpenses.toLocaleString()}`} icon={DollarSign} gradient="bg-primary" trend="+12% from last month" trendUp />
-          <StatCard title="Approved" value={`$${approvedTotal.toLocaleString()}`} icon={TrendingUp} gradient="bg-[hsl(160,84%,39%)]" />
-          <StatCard title="Pending Items" value={pendingCount.toString()} icon={Clock} gradient="bg-[hsl(38,92%,50%)]" />
-          <StatCard title="Total Entries" value={expenses.length.toString()} icon={Receipt} gradient="bg-[hsl(var(--chart-3))]" />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <CategoryChart expenses={expenses} />
-          <MonthlyChart />
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search expenses..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-            </div>
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-full sm:w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}
           </div>
-          <ExpenseTable expenses={filtered} onDelete={handleDelete} />
-        </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard title="Total Expenses" value={`$${totalExpenses.toLocaleString()}`} icon={DollarSign} gradient="bg-primary" trend="+12% from last month" trendUp />
+              <StatCard title="Approved" value={`$${approvedTotal.toLocaleString()}`} icon={TrendingUp} gradient="bg-[hsl(160,84%,39%)]" />
+              <StatCard title="Pending Items" value={pendingCount.toString()} icon={Clock} gradient="bg-[hsl(38,92%,50%)]" />
+              <StatCard title="Total Entries" value={mappedExpenses.length.toString()} icon={Receipt} gradient="bg-[hsl(var(--chart-3))]" />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <CategoryChart expenses={mappedExpenses} />
+              <MonthlyChart />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Search expenses..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+                </div>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <ExpenseTable expenses={filtered} onDelete={handleDelete} />
+            </div>
+          </>
+        )}
       </main>
 
       <AddExpenseDialog open={dialogOpen} onOpenChange={setDialogOpen} onAdd={handleAdd} />
