@@ -1,12 +1,91 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { Plus, DollarSign, TrendingUp, Receipt, Clock, Search, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import StatCard from "@/components/StatCard";
+import ExpenseTable from "@/components/ExpenseTable";
+import AddExpenseDialog from "@/components/AddExpenseDialog";
+import CategoryChart from "@/components/CategoryChart";
+import MonthlyChart from "@/components/MonthlyChart";
+import { MOCK_EXPENSES, CATEGORIES, Expense } from "@/lib/expense-data";
 
 const Index = () => {
+  const [expenses, setExpenses] = useState<Expense[]>(MOCK_EXPENSES);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const approvedTotal = expenses.filter((e) => e.status === "approved").reduce((sum, e) => sum + e.amount, 0);
+  const pendingCount = expenses.filter((e) => e.status === "pending").length;
+
+  const filtered = expenses.filter((e) => {
+    const matchSearch = e.description.toLowerCase().includes(search.toLowerCase()) || e.paidBy.toLowerCase().includes(search.toLowerCase());
+    const matchCategory = filterCategory === "all" || e.category === filterCategory;
+    return matchSearch && matchCategory;
+  });
+
+  const handleAdd = (expense: Omit<Expense, "id">) => {
+    setExpenses((prev) => [{ ...expense, id: Date.now().toString() }, ...prev]);
+  };
+
+  const handleDelete = (id: string) => {
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">💰 ExpenseFlow</h1>
+            <p className="text-sm text-muted-foreground">Software House Expense Tracker</p>
+          </div>
+          <Button onClick={() => setDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Expense
+          </Button>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-6 py-8 space-y-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard title="Total Expenses" value={`$${totalExpenses.toLocaleString()}`} icon={DollarSign} gradient="bg-primary" trend="+12% from last month" trendUp />
+          <StatCard title="Approved" value={`$${approvedTotal.toLocaleString()}`} icon={TrendingUp} gradient="bg-[hsl(160,84%,39%)]" />
+          <StatCard title="Pending Items" value={pendingCount.toString()} icon={Clock} gradient="bg-[hsl(38,92%,50%)]" />
+          <StatCard title="Total Entries" value={expenses.length.toString()} icon={Receipt} gradient="bg-[hsl(var(--chart-3))]" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CategoryChart expenses={expenses} />
+          <MonthlyChart />
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search expenses..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-full sm:w-48">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {CATEGORIES.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <ExpenseTable expenses={filtered} onDelete={handleDelete} />
+        </div>
+      </main>
+
+      <AddExpenseDialog open={dialogOpen} onOpenChange={setDialogOpen} onAdd={handleAdd} />
     </div>
   );
 };
