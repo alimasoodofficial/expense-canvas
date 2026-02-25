@@ -9,7 +9,6 @@ export interface DbExpense {
   amount: number;
   category: string;
   date: string;
-  paid_by: string;
   status: string;
   user_id: string;
   created_at: string;
@@ -39,7 +38,6 @@ export const useExpenses = () => {
       amount: number;
       category: string;
       date: string;
-      paid_by: string;
       status: string;
     }) => {
       const { error } = await supabase.from("expenses").insert({
@@ -70,6 +68,17 @@ export const useExpenses = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["expenses"] }),
   });
 
+  const updateExpense = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<DbExpense> & { id: string }) => {
+      const { error } = await supabase
+        .from("expenses")
+        .update(updates)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["expenses"] }),
+  });
+
   return {
     expenses: expensesQuery.data ?? [],
     isLoading: expensesQuery.isLoading,
@@ -77,5 +86,6 @@ export const useExpenses = () => {
     addExpense,
     deleteExpense,
     updateExpenseStatus,
+    updateExpense,
   };
 };
