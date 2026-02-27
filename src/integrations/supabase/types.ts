@@ -17,6 +17,7 @@ export type Database = {
       expenses: {
         Row: {
           amount: number
+          currency_code: string
           category: string
           created_at: string
           date: string
@@ -25,9 +26,11 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          project_id: string | null
         }
         Insert: {
           amount: number
+          currency_code?: string
           category: string
           created_at?: string
           date?: string
@@ -36,9 +39,11 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          project_id?: string | null
         }
         Update: {
           amount?: number
+          currency_code?: string
           category?: string
           created_at?: string
           date?: string
@@ -47,6 +52,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          project_id?: string | null
         }
         Relationships: []
       }
@@ -70,6 +76,33 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          user_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          user_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          user_id?: string
+          created_at?: string
           updated_at?: string
         }
         Relationships: []

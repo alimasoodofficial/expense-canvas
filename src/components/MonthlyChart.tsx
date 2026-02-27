@@ -10,7 +10,7 @@ interface MonthlyChartProps {
 }
 
 const MonthlyChart = ({ expenses }: MonthlyChartProps) => {
-  const { currency, formatAmount } = useCurrency();
+  const { currency, formatAmount, convertAmount } = useCurrency();
   const monthlyData = useMemo(() => {
     const data: Record<string, number> = {};
     const result = [];
@@ -32,7 +32,7 @@ const MonthlyChart = ({ expenses }: MonthlyChartProps) => {
 
         // Only tally if it's within the last 6 months buckets we created
         if (data[monthStr] !== undefined) {
-          data[monthStr] += expense.amount;
+          data[monthStr] += convertAmount(expense.amount, expense.currency_code, currency);
         }
       } catch (e) {
         // Safe wrap around date parsing

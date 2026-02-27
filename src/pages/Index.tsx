@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, DollarSign, TrendingUp, Receipt, Clock, Search, Filter, LogOut } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, Receipt, Clock, Search, Filter, LogOut, FileUp, Settings2, Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,11 +7,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import StatCard from "@/components/StatCard";
 import ExpenseTable from "@/components/ExpenseTable";
 import AddExpenseDialog from "@/components/AddExpenseDialog";
+import { BulkUploadDialog } from "@/components/BulkUploadDialog";
+import { ManageCategoriesDialog } from "@/components/ManageCategoriesDialog";
 import CategoryChart from "@/components/CategoryChart";
 import MonthlyChart from "@/components/MonthlyChart";
-import { CATEGORIES, Expense } from "@/lib/expense-data";
+import { Expense } from "@/lib/expense-data";
 import { useAuth } from "@/hooks/useAuth";
 import { useExpenses } from "@/hooks/useExpenses";
+import { useCategories } from "@/hooks/useCategories";
 import { useCurrency, Currency } from "@/hooks/useCurrency";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -20,9 +23,12 @@ import { isSameMonth, subMonths, parseISO } from "date-fns";
 const Index = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { expenses, isLoading, addExpense, updateExpense, deleteExpense } = useExpenses();
-  const { currency, setCurrency, formatAmount } = useCurrency();
+  const { expenses, isLoading, addExpense, bulkAddExpenses, updateExpense, deleteExpense } = useExpenses();
+  const { categories } = useCategories();
+  const { currency, setCurrency, formatAmount, convertAmount } = useCurrency();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [expenseToEdit, setExpenseToEdit] = useState<Expense | null>(null);
@@ -32,9 +38,11 @@ const Index = () => {
     id: e.id,
     description: e.description,
     amount: Number(e.amount),
+    currency_code: e.currency_code || "PKR",
     category: e.category as Expense["category"],
     date: e.date,
     status: e.status as Expense["status"],
+    project_id: e.project_id,
   }));
 
   const now = new Date();
@@ -43,15 +51,15 @@ const Index = () => {
   const thisMonthExpenses = mappedExpenses.filter(e => isSameMonth(parseISO(e.date), now));
   const lastMonthExpenses = mappedExpenses.filter(e => isSameMonth(parseISO(e.date), lastMonth));
 
-  const totalThisMonth = thisMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const totalLastMonth = lastMonthExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalThisMonth = thisMonthExpenses.reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, currency), 0);
+  const totalLastMonth = lastMonthExpenses.reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, currency), 0);
 
   const percentageChange = totalLastMonth === 0
     ? (totalThisMonth > 0 ? 100 : 0)
     : ((totalThisMonth - totalLastMonth) / totalLastMonth) * 100;
 
-  const totalExpenses = mappedExpenses.reduce((sum, e) => sum + e.amount, 0);
-  const approvedTotal = mappedExpenses.filter((e) => e.status === "approved").reduce((sum, e) => sum + e.amount, 0);
+  const totalExpenses = mappedExpenses.reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, currency), 0);
+  const approvedTotal = mappedExpenses.filter((e) => e.status === "approved").reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, currency), 0);
   const pendingCount = mappedExpenses.filter((e) => e.status === "pending").length;
 
   const filtered = mappedExpenses.filter((e) => {
@@ -74,9 +82,11 @@ const Index = () => {
         {
           description: expenseData.description,
           amount: expenseData.amount,
+          currency_code: expenseData.currency_code,
           category: expenseData.category,
           date: expenseData.date,
           status: expenseData.status,
+          project_id: expenseData.project_id
         },
         {
           onSuccess: () => toast.success("Expense added!"),
@@ -84,6 +94,24 @@ const Index = () => {
         }
       );
     }
+  };
+
+  const handleBulkSave = (newExpenses: Omit<Expense, "id">[]) => {
+    bulkAddExpenses.mutate(
+      newExpenses.map(expenseData => ({
+        description: expenseData.description,
+        amount: expenseData.amount,
+        currency_code: expenseData.currency_code,
+        category: expenseData.category,
+        date: expenseData.date,
+        status: expenseData.status,
+        project_id: expenseData.project_id
+      })),
+      {
+        onSuccess: () => toast.success(`Successfully added ${newExpenses.length} expenses!`),
+        onError: (err) => toast.error(err.message),
+      }
+    );
   };
 
   const handleEditClick = (expense: Expense) => {
@@ -123,6 +151,17 @@ const Index = () => {
                 <SelectItem value="GBP">GBP</SelectItem>
               </SelectContent>
             </Select>
+            <Button onClick={() => setManageCategoriesOpen(true)} variant="outline" size="icon">
+              <Settings2 className="h-4 w-4" />
+            </Button>
+            <Button onClick={() => navigate("/projects")} variant="outline" className="gap-2">
+              <Folder className="h-4 w-4" />
+              <span className="hidden sm:inline">Projects</span>
+            </Button>
+            <Button onClick={() => setBulkDialogOpen(true)} variant="outline" className="gap-2">
+              <FileUp className="h-4 w-4" />
+              <span className="hidden sm:inline">Bulk import</span>
+            </Button>
             <Button onClick={() => { setExpenseToEdit(null); setDialogOpen(true); }} className="gap-2">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Add Expense</span>
@@ -178,7 +217,7 @@ const Index = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    {CATEGORIES.map((c) => (
+                    {categories.map((c) => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
@@ -198,7 +237,16 @@ const Index = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         onSave={handleSaveExpense}
-        expenseToEdit={expenseToEdit}
+        expense={expenseToEdit}
+      />
+      <BulkUploadDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        onSave={handleBulkSave}
+      />
+      <ManageCategoriesDialog
+        open={manageCategoriesOpen}
+        onOpenChange={setManageCategoriesOpen}
       />
     </div>
   );

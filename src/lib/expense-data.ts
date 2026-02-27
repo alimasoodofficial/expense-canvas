@@ -1,23 +1,17 @@
-export type ExpenseCategory =
-  | "Salaries"
-  | "Software"
-  | "Hardware"
-  | "Office"
-  | "Marketing"
-  | "Travel"
-  | "Utilities"
-  | "Miscellaneous";
+export type ExpenseCategory = string;
 
 export interface Expense {
   id: string;
   description: string;
   amount: number;
+  currency_code: string;
   category: ExpenseCategory;
   date: string;
   status: "approved" | "pending" | "rejected";
+  project_id?: string | null;
 }
 
-export const CATEGORIES: ExpenseCategory[] = [
+export const CATEGORIES: string[] = [
   "Salaries",
   "Software",
   "Hardware",
@@ -28,7 +22,7 @@ export const CATEGORIES: ExpenseCategory[] = [
   "Miscellaneous",
 ];
 
-export const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
+export const CATEGORY_COLORS: Record<string, string> = {
   Salaries: "hsl(var(--chart-1))",
   Software: "hsl(var(--chart-2))",
   Hardware: "hsl(var(--chart-3))",
@@ -39,7 +33,7 @@ export const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   Miscellaneous: "hsl(var(--chart-5))",
 };
 
-export const CATEGORY_BG: Record<ExpenseCategory, string> = {
+export const CATEGORY_BG: Record<string, string> = {
   Salaries: "bg-[hsl(234,89%,73%/0.15)] text-[hsl(234,89%,53%)]",
   Software: "bg-[hsl(255,91%,76%/0.15)] text-[hsl(255,91%,56%)]",
   Hardware: "bg-[hsl(270,95%,75%/0.15)] text-[hsl(270,95%,55%)]",
@@ -50,17 +44,25 @@ export const CATEGORY_BG: Record<ExpenseCategory, string> = {
   Miscellaneous: "bg-secondary/20 text-secondary",
 };
 
+export const getCategoryColor = (category: string) => {
+  return CATEGORY_COLORS[category] || CATEGORY_COLORS.Miscellaneous;
+};
+
+export const getCategoryBg = (category: string) => {
+  return CATEGORY_BG[category] || CATEGORY_BG.Miscellaneous;
+};
+
 export const MOCK_EXPENSES: Expense[] = [
-  { id: "1", description: "Developer salaries - Feb", amount: 45000, category: "Salaries", date: "2026-02-01", status: "approved" },
-  { id: "2", description: "AWS hosting & services", amount: 2800, category: "Software", date: "2026-02-03", status: "approved" },
-  { id: "3", description: "Figma Enterprise license", amount: 450, category: "Software", date: "2026-02-05", status: "approved" },
-  { id: "4", description: "MacBook Pro M4 x2", amount: 6400, category: "Hardware", date: "2026-02-07", status: "pending" },
-  { id: "5", description: "Office rent - Feb", amount: 5500, category: "Office", date: "2026-02-01", status: "approved" },
-  { id: "6", description: "Google Ads campaign", amount: 3200, category: "Marketing", date: "2026-02-10", status: "approved" },
-  { id: "7", description: "Team offsite - Islamabad", amount: 1800, category: "Travel", date: "2026-02-12", status: "pending" },
-  { id: "8", description: "Internet & phone bills", amount: 350, category: "Utilities", date: "2026-02-01", status: "approved" },
-  { id: "9", description: "Standing desks x4", amount: 2200, category: "Office", date: "2026-02-15", status: "rejected" },
-  { id: "10", description: "GitHub Enterprise", amount: 1200, category: "Software", date: "2026-02-08", status: "approved" },
-  { id: "11", description: "LinkedIn job postings", amount: 800, category: "Marketing", date: "2026-02-18", status: "pending" },
-  { id: "12", description: "Electricity bill", amount: 600, category: "Utilities", date: "2026-02-20", status: "approved" },
+  { id: "1", description: "Developer salaries - Feb", amount: 45000, currency_code: "PKR", category: "Salaries", date: "2026-02-01", status: "approved" },
+  { id: "2", description: "AWS hosting & services", amount: 2800, currency_code: "PKR", category: "Software", date: "2026-02-03", status: "approved" },
+  { id: "3", description: "Figma Enterprise license", amount: 450, currency_code: "PKR", category: "Software", date: "2026-02-05", status: "approved" },
+  { id: "4", description: "MacBook Pro M4 x2", amount: 6400, currency_code: "PKR", category: "Hardware", date: "2026-02-07", status: "pending" },
+  { id: "5", description: "Office rent - Feb", amount: 5500, currency_code: "PKR", category: "Office", date: "2026-02-01", status: "approved" },
+  { id: "6", description: "Google Ads campaign", amount: 3200, currency_code: "PKR", category: "Marketing", date: "2026-02-10", status: "approved" },
+  { id: "7", description: "Team offsite - Islamabad", amount: 1800, currency_code: "PKR", category: "Travel", date: "2026-02-12", status: "pending" },
+  { id: "8", description: "Internet & phone bills", amount: 350, currency_code: "PKR", category: "Utilities", date: "2026-02-01", status: "approved" },
+  { id: "9", description: "Standing desks x4", amount: 2200, currency_code: "PKR", category: "Office", date: "2026-02-15", status: "rejected" },
+  { id: "10", description: "GitHub Enterprise", amount: 1200, currency_code: "PKR", category: "Software", date: "2026-02-08", status: "approved" },
+  { id: "11", description: "LinkedIn job postings", amount: 800, currency_code: "PKR", category: "Marketing", date: "2026-02-18", status: "pending" },
+  { id: "12", description: "Electricity bill", amount: 600, currency_code: "PKR", category: "Utilities", date: "2026-02-20", status: "approved" },
 ];

@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trash2, CheckCircle2, Clock, XCircle, Pencil } from "lucide-react";
-import { Expense, CATEGORY_BG } from "@/lib/expense-data";
+import { Expense, getCategoryBg } from "@/lib/expense-data";
 import { useCurrency } from "@/hooks/useCurrency";
 
 interface ExpenseTableProps {
@@ -42,12 +42,12 @@ const ExpenseTable = ({ expenses, onDelete, onEdit }: ExpenseTableProps) => {
                   <div className="max-w-[200px] sm:max-w-[150px] truncate">{expense.description}</div>
                 </TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${CATEGORY_BG[expense.category]}`}>
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getCategoryBg(expense.category)}`}>
                     {expense.category}
                   </span>
                 </TableCell>
                 <TableCell className="font-mono font-semibold">
-                  {formatAmount(expense.amount)}
+                  {formatAmount(expense.amount, expense.currency_code)}
                 </TableCell>
                 <TableCell className="text-muted-foreground whitespace-nowrap">
                   {new Date(expense.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}

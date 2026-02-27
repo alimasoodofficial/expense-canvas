@@ -4,23 +4,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CATEGORIES, ExpenseCategory, Expense } from "@/lib/expense-data";
-import { useCurrency } from "@/hooks/useCurrency";
+import { ExpenseCategory, Expense } from "@/lib/expense-data";
+import { useCurrency, Currency } from "@/hooks/useCurrency";
+import { useCategories } from "@/hooks/useCategories";
 
 interface AddExpenseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (expense: Omit<Expense, "id">, editId?: string) => void;
-  expenseToEdit?: Expense | null;
+  expense?: Expense | null;
+  defaultProjectId?: string | null;
 }
 
-const AddExpenseDialog = ({ open, onOpenChange, onSave, expenseToEdit }: AddExpenseDialogProps) => {
+const AddExpenseDialog = ({ open, onOpenChange, onSave, expense: expenseToEdit, defaultProjectId }: AddExpenseDialogProps) => {
   const { currency } = useCurrency();
+  const { categories } = useCategories();
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<ExpenseCategory | "">("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [status, setStatus] = useState<Expense["status"]>("pending");
+
+  const [inputCurrency, setInputCurrency] = useState<Currency>(currency);
 
   // Populate data when dialog opens for editing
   useEffect(() => {
@@ -30,6 +35,7 @@ const AddExpenseDialog = ({ open, onOpenChange, onSave, expenseToEdit }: AddExpe
       setCategory(expenseToEdit.category);
       setDate(expenseToEdit.date);
       setStatus(expenseToEdit.status);
+      setInputCurrency((expenseToEdit.currency_code as Currency) || currency);
     } else if (open && !expenseToEdit) {
       // Reset when opening for new item
       setDescription("");
@@ -37,14 +43,16 @@ const AddExpenseDialog = ({ open, onOpenChange, onSave, expenseToEdit }: AddExpe
       setCategory("");
       setDate(new Date().toISOString().split("T")[0]);
       setStatus("pending");
+      setInputCurrency(currency);
     }
-  }, [open, expenseToEdit]);
+  }, [open, expenseToEdit, currency]);
 
   const handleSubmit = () => {
     if (!description || !amount || !category || !date) return;
     onSave({
       description,
       amount: parseFloat(amount),
+      currency_code: inputCurrency,
       category: category as ExpenseCategory,
       date,
       status,
@@ -66,8 +74,21 @@ const AddExpenseDialog = ({ open, onOpenChange, onSave, expenseToEdit }: AddExpe
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount ({currency})</Label>
-              <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+              <Label htmlFor="amount">Amount</Label>
+              <div className="flex gap-2">
+                <Input id="amount" className="flex-1" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                <Select value={inputCurrency} onValueChange={(v) => setInputCurrency(v as Currency)}>
+                  <SelectTrigger className="w-[80px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PKR">PKR</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="GBP">GBP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="date">Date</Label>
@@ -80,7 +101,7 @@ const AddExpenseDialog = ({ open, onOpenChange, onSave, expenseToEdit }: AddExpe
               <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory)}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                 <SelectContent>
-                  {CATEGORIES.map((c) => (
+                  {categories.map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
                 </SelectContent>

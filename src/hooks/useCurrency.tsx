@@ -5,7 +5,8 @@ export type Currency = "PKR" | "USD" | "EUR" | "GBP";
 interface CurrencyContextType {
     currency: Currency;
     setCurrency: (currency: Currency) => void;
-    formatAmount: (amount: number) => string;
+    formatAmount: (amount: number, fromCurrency?: string) => string;
+    convertAmount: (amount: number, fromCurrency?: string, toCurrency?: string) => number;
     exchangeRates: Record<Currency, number>;
     loading: boolean;
 }
@@ -56,9 +57,15 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
         fetchRates();
     }, []);
 
-    const formatAmount = (amount: number) => {
-        // Current display amount = Original (in PKR) * Conversion Rate
-        const convertedAmount = amount * rates[currency];
+    const convertAmount = (amount: number, fromCurrency = "PKR", toCurrency = currency) => {
+        const fromRate = rates[fromCurrency as Currency] || 1;
+        const toRate = rates[toCurrency as Currency] || 1;
+        const amountInPKR = amount / fromRate;
+        return amountInPKR * toRate;
+    };
+
+    const formatAmount = (amount: number, fromCurrency = "PKR") => {
+        const convertedAmount = convertAmount(amount, fromCurrency, currency);
 
         return new Intl.NumberFormat("en-US", {
             style: "currency",
@@ -69,7 +76,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <CurrencyContext.Provider value={{ currency, setCurrency, formatAmount, exchangeRates: rates, loading }}>
+        <CurrencyContext.Provider value={{ currency, setCurrency, formatAmount, convertAmount, exchangeRates: rates, loading }}>
             {children}
         </CurrencyContext.Provider>
     );
