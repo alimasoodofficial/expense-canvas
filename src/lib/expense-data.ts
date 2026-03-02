@@ -23,33 +23,34 @@ export const CATEGORIES: string[] = [
 ];
 
 export const CATEGORY_COLORS: Record<string, string> = {
-  Salaries: "hsl(var(--chart-1))",
-  Software: "hsl(var(--chart-2))",
-  Hardware: "hsl(var(--chart-3))",
-  Office: "hsl(var(--chart-4))",
-  Marketing: "hsl(var(--destructive))",
-  Travel: "hsl(160, 84%, 39%)",
-  Utilities: "hsl(38, 92%, 50%)",
-  Miscellaneous: "hsl(var(--chart-5))",
+  Salaries: "hsl(217, 91%, 60%)",
+  Software: "hsl(221, 83%, 53%)",
+  Hardware: "hsl(214, 94%, 48%)",
+  Office: "hsl(201, 96%, 32%)",
+  Marketing: "hsl(199, 89%, 48%)",
+  Travel: "hsl(210, 100%, 66%)",
+  Utilities: "hsl(213, 94%, 68%)",
+  Miscellaneous: "hsl(215, 25%, 27%)",
 };
 
 export const CATEGORY_BG: Record<string, string> = {
-  Salaries: "bg-[hsl(234,89%,73%/0.15)] text-[hsl(234,89%,53%)]",
-  Software: "bg-[hsl(255,91%,76%/0.15)] text-[hsl(255,91%,56%)]",
-  Hardware: "bg-[hsl(270,95%,75%/0.15)] text-[hsl(270,95%,55%)]",
-  Office: "bg-[hsl(238,83%,66%/0.15)] text-[hsl(238,83%,46%)]",
-  Marketing: "bg-[hsl(0,72%,50%/0.12)] text-[hsl(0,72%,40%)]",
-  Travel: "bg-[hsl(160,84%,39%/0.12)] text-[hsl(160,84%,29%)]",
-  Utilities: "bg-[hsl(38,92%,50%/0.12)] text-[hsl(38,92%,35%)]",
-  Miscellaneous: "bg-secondary/20 text-secondary",
+  Salaries: "bg-blue-50 text-blue-600",
+  Software: "bg-indigo-50 text-indigo-600",
+  Hardware: "bg-sky-50 text-sky-600",
+  Office: "bg-cyan-50 text-cyan-700",
+  Marketing: "bg-emerald-50 text-emerald-600",
+  Travel: "bg-violet-50 text-violet-600",
+  Utilities: "bg-amber-50 text-amber-700",
+  Miscellaneous: "bg-slate-50 text-slate-600",
 };
 
 export const getCategoryColor = (category: string) => {
   return CATEGORY_COLORS[category] || CATEGORY_COLORS.Miscellaneous;
 };
 
-export const getCategoryBg = (category: string) => {
-  return CATEGORY_BG[category] || CATEGORY_BG.Miscellaneous;
+export const getCategoryBg = (category: string | undefined | null) => {
+  if (!category) return CATEGORY_BG.Miscellaneous;
+  return CATEGORY_BG[category] || "bg-blue-50 text-blue-600";
 };
 
 export const MOCK_EXPENSES: Expense[] = [

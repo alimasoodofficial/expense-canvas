@@ -258,32 +258,39 @@ const Index = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <h3 className="text-2xl font-bold tracking-tight">Recent Expenses</h3>
+            <div className="space-y-6 pt-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="space-y-1 text-center sm:text-left">
+                  <h3 className="text-2xl font-black tracking-tight text-slate-800">Recent Transactions</h3>
+                  <p className="text-sm text-slate-500 font-medium">Monitoring your latest spending across all categories</p>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:min-w-[300px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search expenses..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+                  <div className="relative group flex-1 sm:min-w-[320px]">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-blue-400 group-focus-within:text-blue-600 transition-colors" />
+                    <Input
+                      placeholder="Search expenses..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="pl-11 h-12 rounded-2xl border-blue-50 bg-blue-50/30 focus-visible:ring-blue-500/20 focus-visible:border-blue-200 transition-all font-medium"
+                    />
                   </div>
                   <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger className="w-full sm:w-48">
-                      <Filter className="h-4 w-4 mr-2" />
+                    <SelectTrigger className="w-full sm:w-52 h-12 rounded-2xl border-blue-50 bg-blue-50/30 font-bold text-blue-900 focus:ring-blue-500/20 transition-all">
+                      <Filter className="h-4 w-4 mr-2 text-blue-500" />
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
+                    <SelectContent className="rounded-2xl border-blue-50 shadow-xl">
+                      <SelectItem value="all" className="font-bold text-blue-900">All Categories</SelectItem>
                       {categories.map((c) => (
-                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                        <SelectItem key={c} value={c} className="font-medium">{c}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              <div className="w-full overflow-x-auto pb-4">
-                <div className="min-w-[800px]">
-                  <ExpenseTable expenses={filtered} onDelete={handleDelete} onEdit={handleEditClick} />
-                </div>
+
+              <div className="w-full">
+                <ExpenseTable expenses={filtered} onDelete={handleDelete} onEdit={handleEditClick} />
               </div>
             </div>
           </>
