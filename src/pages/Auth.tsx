@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,20 @@ const Auth = () => {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Check for verification redirect
+    const hash = window.location.hash;
+    const params = new URLSearchParams(window.location.search);
+
+    // Supabase appends access_token or type=signup on successful verification
+    if (hash.includes("access_token") || hash.includes("type=signup") || params.get("type") === "signup") {
+      toast.success("User verified! Please sign in with your credentials.");
+
+      // Clean up the URL to remove the hash/params
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
