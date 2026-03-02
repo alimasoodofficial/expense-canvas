@@ -7,6 +7,8 @@ export interface Project {
     name: string;
     user_id: string;
     description?: string;
+    budget?: number;
+    payment_received?: number;
     created_at: string;
 }
 
@@ -22,15 +24,21 @@ export const useProjects = () => {
                 .select("*")
                 .order("created_at", { ascending: false });
             if (error) throw error;
-            return data as Project[];
+            return (data as any[]).map(p => ({
+                ...p,
+                budget: p.budget ? p.budget / 100 : 0,
+                payment_received: p.payment_received ? p.payment_received / 100 : 0,
+            })) as Project[];
         },
         enabled: !!user,
     });
 
     const addProject = useMutation({
-        mutationFn: async (project: { name: string; description?: string }) => {
+        mutationFn: async (project: { name: string; description?: string; budget?: number; payment_received?: number }) => {
             const { error } = await supabase.from("projects").insert({
                 ...project,
+                budget: project.budget ? Math.round(project.budget * 100) : 0,
+                payment_received: project.payment_received ? Math.round(project.payment_received * 100) : 0,
                 user_id: user!.id,
             });
             if (error) throw error;
@@ -40,9 +48,13 @@ export const useProjects = () => {
 
     const updateProject = useMutation({
         mutationFn: async ({ id, ...updates }: Partial<Project> & { id: string }) => {
+            const payload: any = { ...updates };
+            if (updates.budget !== undefined) payload.budget = Math.round(updates.budget * 100);
+            if (updates.payment_received !== undefined) payload.payment_received = Math.round(updates.payment_received * 100);
+
             const { error } = await supabase
                 .from("projects")
-                .update(updates)
+                .update(payload)
                 .eq("id", id);
             if (error) throw error;
         },

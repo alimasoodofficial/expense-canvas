@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Upload, FileUp, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -66,7 +66,7 @@ export const BulkUploadDialog = ({ open, onOpenChange, onSave }: BulkUploadDialo
 
                     // Parse currency
                     let currency_code = String(row.currency || row.Currency || row.currency_code || currency).toUpperCase().trim();
-                    if (!["PKR", "USD", "EUR", "GBP"].includes(currency_code)) {
+                    if (!["PKR", "USD", "EUR", "GBP", "SAR", "AED", "AUD"].includes(currency_code)) {
                         currency_code = currency;
                     }
 
@@ -173,6 +173,18 @@ export const BulkUploadDialog = ({ open, onOpenChange, onSave }: BulkUploadDialo
         }
     };
 
+    const PAGE_SIZE = 10;
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const totalPages = Math.ceil(parsedData.length / PAGE_SIZE);
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    const paginatedData = parsedData.slice(startIndex, startIndex + PAGE_SIZE);
+
+    // Reset page when data changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [parsedData.length]);
+
     const handleSave = () => {
         if (parsedData.length > 0) {
             onSave(parsedData);
@@ -237,7 +249,7 @@ export const BulkUploadDialog = ({ open, onOpenChange, onSave }: BulkUploadDialo
                                 </Button>
                             </div>
 
-                            <ScrollArea className="flex-1 border rounded-md h-[400px]">
+                            <div className="flex-1 overflow-hidden border rounded-md flex flex-col bg-card">
                                 <Table>
                                     <TableHeader className="sticky top-0 bg-background z-10">
                                         <TableRow>
@@ -249,7 +261,7 @@ export const BulkUploadDialog = ({ open, onOpenChange, onSave }: BulkUploadDialo
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {parsedData.map((expense, i) => (
+                                        {paginatedData.map((expense, i) => (
                                             <TableRow key={i}>
                                                 <TableCell className="font-medium">{expense.description}</TableCell>
                                                 <TableCell>{expense.category}</TableCell>
@@ -260,7 +272,41 @@ export const BulkUploadDialog = ({ open, onOpenChange, onSave }: BulkUploadDialo
                                         ))}
                                     </TableBody>
                                 </Table>
-                            </ScrollArea>
+                                {parsedData.length === 0 && (
+                                    <div className="text-center py-12 text-muted-foreground">No data to display</div>
+                                )}
+                            </div>
+
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between px-2 pt-2 pb-1 border-t">
+                                    <div className="text-xs text-muted-foreground">
+                                        Showing {startIndex + 1}-{Math.min(startIndex + PAGE_SIZE, parsedData.length)} of {parsedData.length}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            className="h-7 px-2"
+                                        >
+                                            Previous
+                                        </Button>
+                                        <span className="text-xs font-medium">
+                                            {currentPage} / {totalPages}
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="h-7 px-2"
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>

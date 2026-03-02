@@ -68,17 +68,17 @@ const AddExpenseDialog = ({ open, onOpenChange, onSave, expense: expenseToEdit, 
           <DialogTitle>{expenseToEdit ? "Edit Expense" : "Add New Expense"}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
+          <div className="grid gap-2 text-start">
             <Label htmlFor="description">Description</Label>
             <Input id="description" placeholder="e.g. AWS hosting" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
+            <div className="grid gap-2 text-start">
               <Label htmlFor="amount">Amount</Label>
               <div className="flex gap-2">
                 <Input id="amount" className="flex-1" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 <Select value={inputCurrency} onValueChange={(v) => setInputCurrency(v as Currency)}>
-                  <SelectTrigger className="w-[80px]">
+                  <SelectTrigger className="w-[100px]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -86,17 +86,20 @@ const AddExpenseDialog = ({ open, onOpenChange, onSave, expense: expenseToEdit, 
                     <SelectItem value="USD">USD</SelectItem>
                     <SelectItem value="EUR">EUR</SelectItem>
                     <SelectItem value="GBP">GBP</SelectItem>
+                    <SelectItem value="SAR">SAR</SelectItem>
+                    <SelectItem value="AED">AED</SelectItem>
+                    <SelectItem value="AUD">AUD</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 text-start">
               <Label htmlFor="date">Date</Label>
               <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
+            <div className="grid gap-2 text-start">
               <Label>Category</Label>
               <Select value={category} onValueChange={(v) => setCategory(v as ExpenseCategory)}>
                 <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
@@ -107,7 +110,7 @@ const AddExpenseDialog = ({ open, onOpenChange, onSave, expense: expenseToEdit, 
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-2 text-start">
               <Label>Status</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as Expense["status"])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -120,9 +123,9 @@ const AddExpenseDialog = ({ open, onOpenChange, onSave, expense: expenseToEdit, 
             </div>
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit}>{expenseToEdit ? "Save Changes" : "Add Expense"}</Button>
+          <Button onClick={handleSubmit}>{expenseToEdit ? "Save" : "Add Expense"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

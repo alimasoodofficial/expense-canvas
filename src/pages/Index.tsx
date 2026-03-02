@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Plus, DollarSign, TrendingUp, Receipt, Clock, Search, Filter, LogOut, FileUp, Settings2, Folder } from "lucide-react";
+import { Plus, DollarSign, TrendingUp, Receipt, Clock, Search, Filter, LogOut, FileUp, Settings2, Folder, Download, Globe } from "lucide-react";
+import { downloadExpensesCSV } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useExpenses } from "@/hooks/useExpenses";
 import { useCategories } from "@/hooks/useCategories";
 import { useCurrency, Currency } from "@/hooks/useCurrency";
+import { useProjects } from "@/hooks/useProjects";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { isSameMonth, subMonths, parseISO } from "date-fns";
@@ -24,8 +26,9 @@ const Index = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { expenses, isLoading, addExpense, bulkAddExpenses, updateExpense, deleteExpense } = useExpenses();
+  const { projects } = useProjects();
   const { categories } = useCategories();
-  const { currency, setCurrency, formatAmount, convertAmount } = useCurrency();
+  const { currency, setCurrency, formatAmount, convertAmount, lastUpdated, exchangeRates } = useCurrency();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
@@ -51,15 +54,15 @@ const Index = () => {
   const thisMonthExpenses = mappedExpenses.filter(e => isSameMonth(parseISO(e.date), now));
   const lastMonthExpenses = mappedExpenses.filter(e => isSameMonth(parseISO(e.date), lastMonth));
 
-  const totalThisMonth = thisMonthExpenses.reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, currency), 0);
-  const totalLastMonth = lastMonthExpenses.reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, currency), 0);
+  const totalThisMonth = thisMonthExpenses.reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, "PKR"), 0);
+  const totalLastMonth = lastMonthExpenses.reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, "PKR"), 0);
 
   const percentageChange = totalLastMonth === 0
     ? (totalThisMonth > 0 ? 100 : 0)
     : ((totalThisMonth - totalLastMonth) / totalLastMonth) * 100;
 
-  const totalExpenses = mappedExpenses.reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, currency), 0);
-  const approvedTotal = mappedExpenses.filter((e) => e.status === "approved").reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, currency), 0);
+  const totalExpenses = mappedExpenses.reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, "PKR"), 0);
+  const approvedTotal = mappedExpenses.filter((e) => e.status === "approved").reduce((sum, e) => sum + convertAmount(e.amount, e.currency_code, "PKR"), 0);
   const pendingCount = mappedExpenses.filter((e) => e.status === "pending").length;
 
   const filtered = mappedExpenses.filter((e) => {
@@ -134,14 +137,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
+        <div className="container mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col items-center sm:items-start">
             <h1 className="text-2xl font-bold text-foreground tracking-tight">💰 Expense 360</h1>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center justify-center">
             <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-              <SelectTrigger className="w-[80px] h-9">
+              <SelectTrigger className="w-[100px] h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -149,8 +152,12 @@ const Index = () => {
                 <SelectItem value="USD">USD</SelectItem>
                 <SelectItem value="EUR">EUR</SelectItem>
                 <SelectItem value="GBP">GBP</SelectItem>
+                <SelectItem value="SAR">SAR</SelectItem>
+                <SelectItem value="AED">AED</SelectItem>
+                <SelectItem value="AUD">AUD</SelectItem>
               </SelectContent>
             </Select>
+
             <Button onClick={() => setManageCategoriesOpen(true)} variant="outline" size="icon">
               <Settings2 className="h-4 w-4" />
             </Button>
@@ -158,9 +165,13 @@ const Index = () => {
               <Folder className="h-4 w-4" />
               <span className="hidden sm:inline">Projects</span>
             </Button>
+            <Button onClick={() => downloadExpensesCSV(mappedExpenses, "all-expenses")} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Download</span>
+            </Button>
             <Button onClick={() => setBulkDialogOpen(true)} variant="outline" className="gap-2">
               <FileUp className="h-4 w-4" />
-              <span className="hidden sm:inline">Bulk import</span>
+              <span className="hidden sm:inline">Import</span>
             </Button>
             <Button onClick={() => { setExpenseToEdit(null); setDialogOpen(true); }} className="gap-2">
               <Plus className="h-4 w-4" />
@@ -204,24 +215,70 @@ const Index = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search expenses..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-bold tracking-tight">Active Projects</h3>
+                <Button variant="ghost" onClick={() => navigate("/projects")} className="text-primary font-bold">
+                  View All Projects
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.slice(0, 3).map((project) => (
+                  <div
+                    key={project.id}
+                    onClick={() => navigate(`/projects/${project.id}`)}
+                    className="group relative bg-card border border-border/50 rounded-[2rem] p-6 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer overflow-hidden border-b-4 border-b-primary/10"
+                  >
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="bg-primary/10 p-3 rounded-2xl text-primary group-hover:scale-110 transition-transform">
+                        <Folder className="h-6 w-6 fill-primary/10" />
+                      </div>
+                      <h4 className="font-bold text-xl text-primary truncate">{project.name}</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px] mb-4 italic">
+                      {project.description || "No description provided"}
+                    </p>
+                    <div className="flex items-center justify-between pt-4 border-t border-dashed">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        Budget: {formatAmount(project.budget || 0)}
+                      </span>
+                      <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                    </div>
+                  </div>
+                ))}
+                <div
+                  onClick={() => navigate("/projects")}
+                  className="flex flex-col items-center justify-center border-2 border-dashed rounded-[2rem] p-6 hover:bg-muted/30 transition-all cursor-pointer text-muted-foreground hover:text-primary min-h-[160px] group"
+                >
+                  <div className="bg-muted p-3 rounded-full mb-2 group-hover:scale-110 transition-transform">
+                    <Plus className="h-6 w-6" />
+                  </div>
+                  <p className="font-bold">Create New Project</p>
                 </div>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((c) => (
-                      <SelectItem key={c} value={c}>{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <h3 className="text-2xl font-bold tracking-tight">Recent Expenses</h3>
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                  <div className="relative flex-1 sm:min-w-[300px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Search expenses..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+                  </div>
+                  <Select value={filterCategory} onValueChange={setFilterCategory}>
+                    <SelectTrigger className="w-full sm:w-48">
+                      <Filter className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="w-full overflow-x-auto pb-4">
                 <div className="min-w-[800px]">

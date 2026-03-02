@@ -12,7 +12,7 @@ interface StatCardProps {
 
 const StatCard = ({ title, value, icon: Icon, trend, trendUp, gradient }: StatCardProps) => {
   return (
-    <Card className="relative overflow-hidden border-none shadow-md">
+    <Card className="relative overflow-hidden border-none shadow-md h-full min-h-[110px]">
       <div className={`absolute inset-0 opacity-10 ${gradient}`} />
       <CardContent className="relative p-6">
         <div className="flex items-center justify-between">
